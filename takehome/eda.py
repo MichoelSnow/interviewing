@@ -28,18 +28,42 @@ def basic_eda(df: pd.DataFrame):
             print(f'{df[col].max()} - The last {col} occured')
         elif col in num_cols:
             ljust_len = 38 + len(str(col))
-            print((f'The minimum value of {col} is').ljust(ljust_len) + f'{df[col].min()}')
-            print((f'The maximum value of {col} is').ljust(ljust_len) + f'{df[col].max()}')
-            print((f'The mean value of {col} is').ljust(ljust_len) + f'{df[col].mean()}')
-            print((f'The median value of {col} is').ljust(ljust_len) + f'{df[col].median()}')
-            print((f'The standard deviation of {col} is').ljust(ljust_len) + f'{df[col].std()}')
+            print(f'The minimum value of {col} is'.ljust(ljust_len) + f'{df[col].min()}')
+            print(f'The maximum value of {col} is'.ljust(ljust_len) + f'{df[col].max()}')
+            print(f'The mean value of {col} is'.ljust(ljust_len) + f'{df[col].mean()}')
+            print(f'The median value of {col} is'.ljust(ljust_len) + f'{df[col].median()}')
+            print(f'The standard deviation of {col} is'.ljust(ljust_len) + f'{df[col].std()}')
 
 
 def eda_waffle(df: pd.DataFrame, flip: bool = False, remove_null: bool = True):
     unq_counts = df.nunique()
     for col in df.columns:
-        if unq_counts[col] <= .05 * df.shape[0] and unq_counts[col] > 1:
+        if 1 < unq_counts[col] <= .05 * df.shape[0]:
             print(waffle_plot(df, col, flip=flip, remove_null=remove_null))
+
+
+def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
+    dttm_cols = df.select_dtypes(include=np.datetime64).columns.tolist()
+    non_str_cols = df.select_dtypes(exclude='object').columns.tolist()
+    for col in non_str_cols:
+        df_tmp = pd.DataFrame({col: df[col]})
+        if large_counts:
+            val_cts = df[col].value_counts()
+            lrg_vals = val_cts.loc[val_cts > val_cts.iloc[0] * 0.05].index
+            df_tmp = df_tmp.loc[df_tmp[col].isin(lrg_vals)]
+        unq_counts = df_tmp[col].nunique()
+        if unq_counts > 5:
+            bin_ct = min(unq_counts, 100)
+            p = (ggplot(df_tmp, aes(x=col))
+                 + geom_histogram(bins=bin_ct, fill='firebrick', color='darkgoldenrod')
+                 + xlab(col)
+                 + ylab('Count')
+                 )
+            if col in dttm_cols or len(str(df_tmp[col].iloc[0])) > 5:
+                p += theme(axis_text_x=element_text(rotation=90, hjust=0.5))
+            if logy:
+                p += scale_y_log10()
+            print(p)
 
 
 def waffle_plot(df: pd.DataFrame, col_name: str, plot_title: str = None, flip: bool = False, remove_null: bool = True):
@@ -53,11 +77,14 @@ def waffle_plot(df: pd.DataFrame, col_name: str, plot_title: str = None, flip: b
     val_cts = df[col_name].value_counts()
     if remove_null:
         srs_prcnts = (val_cts / val_cts.sum() * 100).round().astype(int)
+        total_prcnt = 100 - 1
     else:
         srs_prcnts = (val_cts / df.shape[0] * 100).round().astype(int)
+        total_prcnt = (val_cts.sum() / df.shape[0] * 100).round().astype(int) - 1
     srs_prcnts = srs_prcnts.loc[srs_prcnts >= 1]
     srs_prcnts = srs_prcnts.cumsum() - 1
-    df_waffle['clr'] = f'The other {val_cts.shape[0]- srs_prcnts.shape[0]} values'
+    df_waffle['clr'] = 'Null Values'
+    df_waffle.loc[:total_prcnt, 'clr'] = f'The other {val_cts.shape[0] - srs_prcnts.shape[0]} values'
     for idx in srs_prcnts.index.tolist()[::-1]:
         df_waffle.loc[:srs_prcnts[idx], 'clr'] = idx
     p = (ggplot(df_waffle)
