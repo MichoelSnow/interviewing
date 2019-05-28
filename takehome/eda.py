@@ -1,7 +1,10 @@
 import pandas as pd
 import numpy as np
 from plotnine import *
-from IPython.display import display
+from feature_engineering import fe_dt
+
+
+# from IPython.display import display
 
 
 def basic_eda(df: pd.DataFrame):
@@ -66,6 +69,31 @@ def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
             print(p)
 
 
+def eda_bar(df: pd.DataFrame, pos: str = 'stack', logy: bool = False):
+    unq_counts = df.nunique()
+    print("Note that if the plot is only one color (probably gray) this means that there was no x value which had more than one fill value in it")
+    for col_fill in df.columns:
+        if 1 < unq_counts[col_fill] <= 10:
+            for col_x in df.columns :
+                if 5 < unq_counts[col_x] < 100 and col_x!=col_fill:
+                    print(bar_plot(df, col_x, col_fill, pos, logy), flush=True)
+
+
+def bar_plot(df: pd.DataFrame, x_col: str, fill_col: str, pos: str = 'stack', logy: bool = False):
+    df_tmp = df[[x_col, fill_col]].copy()
+    df_tmp[fill_col] = df_tmp[fill_col].astype(str)
+    p = (ggplot(df_tmp, aes(x=x_col, fill='tmp'))
+         + geom_bar(position=pos)
+         + theme(figure_size=(10, 6))
+         + ggtitle(f'x - {x_col}, fill - {fill_col}')
+         )
+    if len(str(df_tmp[x_col].iloc[0])) > 5:
+        p += theme(axis_text_x=element_text(rotation=90, hjust=0.5))
+    if logy:
+        p += scale_y_log10()
+    return p
+
+
 def waffle_plot(df: pd.DataFrame, col_name: str, plot_title: str = None, flip: bool = False, remove_null: bool = True):
     if plot_title is None:
         plot_title = col_name
@@ -100,3 +128,16 @@ def waffle_plot(df: pd.DataFrame, col_name: str, plot_title: str = None, flip: b
     if flip:
         p += coord_flip()
     return p
+
+
+if __name__ == '__main__':
+    df_email = pd.read_csv('challenges/simon/email_data.csv', dtype=str)
+    df_email['event_dttm'] = pd.to_datetime(df_email.event_time, unit='s')
+    df_email.event_time = df_email.event_time.astype(int)
+    df_email = fe_dt(df_email)
+    eda_bar(df_email, logy=True)
+    df_orders = pd.read_csv('challenges/simon/orders.csv', dtype=str)
+    df_orders['event_dttm'] = pd.to_datetime(df_orders.event_time, unit='s')
+    df_orders.revenue = df_orders.revenue.astype(int)
+    df_orders.event_time = df_orders.event_time.astype(int)
+    eda_bar(df_orders)
