@@ -71,7 +71,6 @@ def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
 
 def eda_bar(df: pd.DataFrame, pos: str = 'stack', logy: bool = False):
     unq_counts = df.nunique()
-    print("Note that if the plot is only one color (probably gray) this means that there was no x value which had more than one fill value in it")
     for col_fill in df.columns:
         if 1 < unq_counts[col_fill] <= 10:
             for col_x in df.columns :
@@ -81,8 +80,8 @@ def eda_bar(df: pd.DataFrame, pos: str = 'stack', logy: bool = False):
 
 def bar_plot(df: pd.DataFrame, x_col: str, fill_col: str, pos: str = 'stack', logy: bool = False):
     df_tmp = df[[x_col, fill_col]].copy()
-    df_tmp[fill_col] = df_tmp[fill_col].astype(str)
-    p = (ggplot(df_tmp, aes(x=x_col, fill='tmp'))
+    df_tmp[fill_col] = df_tmp[fill_col].astype("category")
+    p = (ggplot(df_tmp, aes(x=x_col, fill=fill_col))
          + geom_bar(position=pos)
          + theme(figure_size=(10, 6))
          + ggtitle(f'x - {x_col}, fill - {fill_col}')
