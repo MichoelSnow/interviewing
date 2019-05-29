@@ -46,6 +46,14 @@ def eda_waffle(df: pd.DataFrame, flip: bool = False, remove_null: bool = True):
 
 
 def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
+    """
+
+    :param df:
+    :param large_counts: Boolean value, if True will only use values which make up at least 5% of the data, this
+    serves to remove outliers from the histogram
+    :param logy:
+    :return:
+    """
     dttm_cols = df.select_dtypes(include=np.datetime64).columns.tolist()
     non_str_cols = df.select_dtypes(exclude='object').columns.tolist()
     for col in non_str_cols:
@@ -56,7 +64,7 @@ def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
             df_tmp = df_tmp.loc[df_tmp[col].isin(lrg_vals)]
         unq_counts = df_tmp[col].nunique()
         if unq_counts > 5:
-            bin_ct = min(unq_counts, 100)
+            bin_ct = min(unq_counts, 50)
             p = (ggplot(df_tmp, aes(x=col))
                  + geom_histogram(bins=bin_ct, fill='firebrick', color='darkgoldenrod')
                  + xlab(col)
@@ -69,12 +77,36 @@ def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
             print(p)
 
 
+def hist_group_plot(df: pd.DataFrame, x_col: str, group_col: str, large_counts: bool = False, logy: bool = False):
+    df_tmp = pd.DataFrame({x_col: df[x_col], group_col: df[group_col]})
+    dttm_cols = df_tmp.select_dtypes(include=np.datetime64).columns.tolist()
+    if large_counts:
+        lrg_vals = []
+        for val in df_tmp[group_col].unique():
+            val_cts = df_tmp.loc[df_tmp[group_col]==val, x_col].value_counts()
+            lrg_vals += val_cts.loc[val_cts > val_cts.iloc[0] * 0.05].index.tolist()
+        df_tmp = df_tmp.loc[df_tmp[x_col].isin(lrg_vals)]
+    unq_counts = df_tmp[x_col].nunique()
+    bin_ct = min(unq_counts, 50)
+    p = (ggplot(df_tmp, aes(x=x_col, fill=group_col))
+         + geom_histogram(bins=bin_ct)
+         + xlab(x_col)
+         + ylab('Count')
+         + facet_wrap(group_col, ncol=1)
+         )
+    if x_col in dttm_cols or len(str(df_tmp[x_col].iloc[0])) > 5:
+        p += theme(axis_text_x=element_text(rotation=90, hjust=0.5))
+    if logy:
+        p += scale_y_log10()
+    print(p)
+
+
 def eda_bar(df: pd.DataFrame, pos: str = 'stack', logy: bool = False):
     unq_counts = df.nunique()
     for col_fill in df.columns:
         if 1 < unq_counts[col_fill] <= 10:
-            for col_x in df.columns :
-                if 5 < unq_counts[col_x] < 100 and col_x!=col_fill:
+            for col_x in df.columns:
+                if 5 < unq_counts[col_x] < 100 and col_x != col_fill:
                     print(bar_plot(df, col_x, col_fill, pos, logy), flush=True)
 
 
