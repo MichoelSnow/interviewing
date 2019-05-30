@@ -77,19 +77,25 @@ def eda_hist(df: pd.DataFrame, large_counts: bool = False, logy: bool = False):
             print(p)
 
 
-def hist_group_plot(df: pd.DataFrame, x_col: str, group_col: str, large_counts: bool = False, logy: bool = False):
+def hist_group_plot(df: pd.DataFrame, x_col: str, group_col: str, large_counts: bool = False, logy: bool = False,
+                    outliers: bool = True):
     df_tmp = pd.DataFrame({x_col: df[x_col], group_col: df[group_col]})
     dttm_cols = df_tmp.select_dtypes(include=np.datetime64).columns.tolist()
+    if not outliers:
+        val_cts = df_tmp[x_col].value_counts()
+        min_ct_unq = max(val_cts.iloc[0] * 0.005, 5)
+        lrg_vals = val_cts.loc[val_cts > min_ct_unq].index
+        df_tmp = df_tmp.loc[df_tmp[x_col].isin(lrg_vals)]
     if large_counts:
         lrg_vals = []
         for val in df_tmp[group_col].unique():
-            val_cts = df_tmp.loc[df_tmp[group_col]==val, x_col].value_counts()
+            val_cts = df_tmp.loc[df_tmp[group_col] == val, x_col].value_counts()
             lrg_vals += val_cts.loc[val_cts > val_cts.iloc[0] * 0.05].index.tolist()
         df_tmp = df_tmp.loc[df_tmp[x_col].isin(lrg_vals)]
     unq_counts = df_tmp[x_col].nunique()
     bin_ct = min(unq_counts, 50)
     p = (ggplot(df_tmp, aes(x=x_col, fill=group_col))
-         + geom_histogram(bins=bin_ct)
+         + geom_density(stat='count')
          + xlab(x_col)
          + ylab('Count')
          + facet_wrap(group_col, ncol=1)
