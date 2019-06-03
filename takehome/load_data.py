@@ -17,7 +17,7 @@ def check_files(file_paths: list):
 def read_csvs(file_paths: list, df_names: list):
     """
     I like to load in everything as strings, so that pandas doesn't "helpfully" convert data types which should be
-    strings into integers, e.g., patient ids which contain leading zeros.
+    strings into integers, e.g., ids which contain leading zeros.
     """
     for idx, fl in enumerate(file_paths):
         print(f"{df_names[idx]} = pd.read_csv('{fl}', dtype=str)")
@@ -33,7 +33,7 @@ def convert_str_to_dt(df_names: list, dt_cols: list, str_format: str):
     # Go to http://strftime.org/ for the list of format abbreviations
     for df in df_names:
         for col in dt_cols:
-            print(f"{df}.{col} = pd.to_datetime({df}.{col}, format={str_format}")
+            print(f"{df}.{col} = pd.to_datetime({df}.{col}, format='{str_format}')")
 
 
 def convert_epoch_to_dt(df_names: list, dt_cols: list):
