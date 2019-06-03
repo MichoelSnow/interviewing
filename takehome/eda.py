@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from plotnine import *
-from feature_engineering import fe_dt
+from .feature_engineering import fe_dt
 
 
 # from IPython.display import display
@@ -11,21 +11,20 @@ def basic_eda(df: pd.DataFrame):
     missing_ct = df.isnull().sum()
     dttm_cols = df.select_dtypes(include=np.datetime64).columns.tolist()
     num_cols = df.select_dtypes(include=[int, float]).columns.tolist()
-    print('Remember to change the printouts to make sense for your data')
     print(f'Row count is {"{:,}".format(df.shape[0])}')
     print(f'{"{:,}".format(df.duplicated().sum())} of the rows are duplicates, about '
           f'{round(df.duplicated().sum() / df.shape[0] * 100, 2)}% of the total rows')
-    print(f'{"{:,}".format(missing_ct.sum())} of the rows are missing, about '
-          f'{round(missing_ct.sum() / df.shape[0] * 100, 2)}% of the total rows')
+    print(f'{"{:,}".format(missing_ct.max())} of the rows have missing data, about '
+          f'{round(missing_ct.max() / df.shape[0] * 100, 2)}% of the total rows')
     for col in df.columns:
         print()
         print(str(col))
-        print(f'There are {"{:,}".format(df[col].nunique())} unique {col}, approximately '
-              f'{round(df[col].nunique() / df.shape[0] * 100)}% of the total {col} rows')
-        print(f'{"{:,}".format(df[col].duplicated().sum())} of the {col} rows are duplicates, about '
-              f'{round(df[col].duplicated().sum() / df.shape[0] * 100, 2)}% of the total {col} rows')
-        print(f'{"{:,}".format(missing_ct[col])} of the {col} rows are missing, about '
-              f'{round(missing_ct[col] / df.shape[0] * 100, 2)}% of the total {col} rows')
+        print(f'There are {"{:,}".format(df[col].nunique())} unique {col}s, approximately '
+              f'{round(df[col].nunique() / df.shape[0] * 100)}% of the total {col} values')
+        print(f'{"{:,}".format(df[col].duplicated().sum())} of the {col} values are duplicates, about '
+              f'{round(df[col].duplicated().sum() / df.shape[0] * 100, 1)}% of the total {col} values')
+        print(f'{"{:,}".format(missing_ct[col])} of the {col} values are missing, about '
+              f'{round(missing_ct[col] / df.shape[0] * 100, 1)}% of the total {col} values')
         if col in dttm_cols:
             print(f'{df[col].min()} - The first {col} occured')
             print(f'{df[col].max()} - The last {col} occured')
